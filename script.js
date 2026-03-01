@@ -41,14 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   newPrompt();
 
-  // 🔊 Read task
   document.getElementById("readTask").onclick = () => {
     speak(currentPrompt);
   };
 
-  // 🎙 Dictation
   document.getElementById("dictateBtn").onclick = () => {
-
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
@@ -78,6 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!answer) return;
 
     const lang = langEl.value;
+
+    // 🔒 LOCK INPUT AFTER SUBMIT
+    runBtn.disabled = true;
+    ans.disabled = true;
 
     out.classList.remove("hidden");
     out.innerHTML = "Thinking…";
@@ -120,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
 
       <button id="speakFeedback" class="smallBtn">🔊 Read</button>
+      <button id="tryAgainBtn">Try Again</button>
       <button id="nextBtn">Next</button>
 
       <div class="teacherBar" style="margin-top:12px;">
@@ -131,6 +133,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("speakFeedback").onclick = () => {
       speak(result.feedback);
+    };
+
+    // ✅ TRY AGAIN (re-enable learning)
+    document.getElementById("tryAgainBtn").onclick = () => {
+      ans.disabled = false;
+      runBtn.disabled = false;
+      ans.focus();
+      out.classList.add("hidden");
     };
 
     document.querySelectorAll(".teacherBar button").forEach(btn => {
@@ -147,6 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("nextBtn").onclick = () => {
       if (round < CONFIG.ROUNDS) {
+        ans.disabled = false;
+        runBtn.disabled = false;
         ans.value = "";
         ans.focus();
         newPrompt();
@@ -200,6 +212,8 @@ document.addEventListener("DOMContentLoaded", () => {
       round = 0;
       scores = [];
       startTime = null;
+      ans.disabled = false;
+      runBtn.disabled = false;
       ans.value = "";
       ans.focus();
       newPrompt();
