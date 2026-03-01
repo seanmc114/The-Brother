@@ -11,6 +11,7 @@ const PROMPTS = [
 
 let round = 0;
 let scores = [];
+let focuses = [];
 let startTime = null;
 let currentPrompt = "";
 
@@ -41,11 +42,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   newPrompt();
 
+  // 🔊 Read task
   document.getElementById("readTask").onclick = () => {
     speak(currentPrompt);
   };
 
+  // 🎙 Dictation
   document.getElementById("dictateBtn").onclick = () => {
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
@@ -92,10 +96,11 @@ document.addEventListener("DOMContentLoaded", () => {
         lang
       });
     } catch {
-      result = { score: 3, feedback: "Something went wrong — try again." };
+      result = { score: 3, focus: "Error", feedback: "Something went wrong — try again." };
     }
 
     scores.push(result.score);
+    focuses.push(result.focus);
     round++;
 
     renderFeedback(result);
@@ -135,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
       speak(result.feedback);
     };
 
-    // ✅ TRY AGAIN (re-enable learning)
+    // ✅ TRY AGAIN
     document.getElementById("tryAgainBtn").onclick = () => {
       ans.disabled = false;
       runBtn.disabled = false;
@@ -174,7 +179,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const avg = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
     const time = Math.floor((Date.now() - startTime) / 1000);
 
-    const improving = scores[2] > scores[0];
+    // 🔎 Identify most common weakness
+    const focusCounts = {};
+    focuses.forEach(f => {
+      if (!f) return;
+      focusCounts[f] = (focusCounts[f] || 0) + 1;
+    });
+
+    let mainWeakness = null;
+    let maxCount = 0;
+
+    for (let key in focusCounts) {
+      if (focusCounts[key] > maxCount) {
+        maxCount = focusCounts[key];
+        mainWeakness = key;
+      }
+    }
 
     let emoji = avg <= 4 ? "🟥" :
                 avg <= 6 ? "🟨" :
@@ -186,9 +206,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 avg <= 8 ? "Strong Performance" :
                 "Turbo Level";
 
-    let message =
-      improving ? "You improved. Build on that next round."
-      : "Next step: target your weakest area and push it.";
+    let message;
+
+    if (mainWeakness) {
+      message = `Your main area to fix: ${mainWeakness}. Focus there next round and you’ll see a quick jump.`;
+    } else {
+      message = "Solid performance. Keep refining accuracy and detail.";
+    }
 
     out.innerHTML = `
       <hr>
@@ -211,6 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("playAgain").onclick = () => {
       round = 0;
       scores = [];
+      focuses = [];
       startTime = null;
       ans.disabled = false;
       runBtn.disabled = false;
