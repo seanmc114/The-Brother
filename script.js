@@ -9,6 +9,15 @@ const PROMPTS = [
   "Describe your weekend"
 ];
 
+// 🔎 DRILL MAP (deterministic – no AI risk)
+const DRILL_MAP = {
+  "Wrong tense": "Drill: Write 5 short sentences using the correct tense. Check each verb ending carefully.",
+  "Missing verb": "Drill: Write 5 complete sentences. Every sentence must contain a clear verb.",
+  "Accents/spelling": "Drill: Rewrite your last answer focusing only on spelling and accents.",
+  "Word order": "Drill: Write 5 short sentences and double-check correct word order.",
+  "Not enough detail": "Drill: Add one extra detail to each sentence you write."
+};
+
 let round = 0;
 let scores = [];
 let focuses = [];
@@ -42,20 +51,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   newPrompt();
 
-  // 🔊 Read task
   document.getElementById("readTask").onclick = () => {
     speak(currentPrompt);
   };
 
-  // 🎙 Dictation
   document.getElementById("dictateBtn").onclick = () => {
-
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
-
     const lang = langEl.value;
+
     recognition.lang =
       lang === "es" ? "es-ES" :
       lang === "fr" ? "fr-FR" :
@@ -80,7 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const lang = langEl.value;
 
-    // 🔒 LOCK INPUT AFTER SUBMIT
     runBtn.disabled = true;
     ans.disabled = true;
 
@@ -128,37 +133,18 @@ document.addEventListener("DOMContentLoaded", () => {
       <button id="speakFeedback" class="smallBtn">🔊 Read</button>
       <button id="tryAgainBtn">Try Again</button>
       <button id="nextBtn">Next</button>
-
-      <div class="teacherBar" style="margin-top:12px;">
-        <button data-v="clear">👍 Clear</button>
-        <button data-v="unclear">🔁 Could be clearer</button>
-        <button data-v="bad">❌ Not helpful</button>
-      </div>
     `;
 
     document.getElementById("speakFeedback").onclick = () => {
       speak(result.feedback);
     };
 
-    // ✅ TRY AGAIN
     document.getElementById("tryAgainBtn").onclick = () => {
       ans.disabled = false;
       runBtn.disabled = false;
       ans.focus();
       out.classList.add("hidden");
     };
-
-    document.querySelectorAll(".teacherBar button").forEach(btn => {
-      btn.onclick = () => {
-        console.log("TEACHER_FEEDBACK", {
-          score: result.score,
-          feedback: result.feedback,
-          rating: btn.dataset.v
-        });
-        btn.disabled = true;
-        btn.innerText = "✓";
-      };
-    });
 
     document.getElementById("nextBtn").onclick = () => {
       if (round < CONFIG.ROUNDS) {
@@ -179,7 +165,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const avg = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
     const time = Math.floor((Date.now() - startTime) / 1000);
 
-    // 🔎 Identify most common weakness
     const focusCounts = {};
     focuses.forEach(f => {
       if (!f) return;
@@ -196,6 +181,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    let drill = DRILL_MAP[mainWeakness] || "Drill: Rewrite your last answer and improve it.";
+
     let emoji = avg <= 4 ? "🟥" :
                 avg <= 6 ? "🟨" :
                 avg <= 8 ? "🟦" :
@@ -205,14 +192,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 avg <= 6 ? "Building Momentum" :
                 avg <= 8 ? "Strong Performance" :
                 "Turbo Level";
-
-    let message;
-
-    if (mainWeakness) {
-      message = `Your main area to fix: ${mainWeakness}. Focus there next round and you’ll see a quick jump.`;
-    } else {
-      message = "Solid performance. Keep refining accuracy and detail.";
-    }
 
     out.innerHTML = `
       <hr>
@@ -226,7 +205,11 @@ document.addEventListener("DOMContentLoaded", () => {
       <div>Scores: ${scores.join(" → ")}</div>
 
       <p style="margin-top:14px;">
-        ${message}
+        Your main area to fix: <strong>${mainWeakness || "General refinement"}</strong>.
+      </p>
+
+      <p style="margin-top:8px;">
+        ${drill}
       </p>
 
       <button id="playAgain">Play Again</button>
